@@ -27,6 +27,8 @@ const allowedOrigins = [
   "http://localhost:5174",
   "http://localhost:3000",
   "https://zwolf-dashboard.onrender.com",
+  "https://www.praveen.cloud",
+  "https://praveen.cloud",
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
