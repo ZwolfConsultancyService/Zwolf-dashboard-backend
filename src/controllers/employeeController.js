@@ -87,16 +87,27 @@ export const toggleEmployeeStatus = asyncHandler(async (req, res) => {
 
 export const deleteEmployee = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
-  if (!user) throw new ApiError(404, 'Employee not found');
-  if (user._id.equals(req.user._id)) throw new ApiError(400, 'You cannot delete yourself');
 
-  user.isActive = false;
-  await user.save();
+  if (!user) {
+    throw new ApiError(404, 'Employee not found');
+  }
+
+  if (user._id.equals(req.user._id)) {
+    throw new ApiError(400, 'You cannot delete yourself');
+  }
+
+  await User.findByIdAndDelete(req.params.id);
 
   await logActivity({
-    user: req.user._id, action: 'DELETE', module: 'Employee',
-    description: `Deactivated employee ${user.name}`, referenceId: user._id,
+    user: req.user._id,
+    action: 'DELETE',
+    module: 'Employee',
+    description: `Deleted employee ${user.name}`,
+    referenceId: user._id,
   });
 
-  res.json({ success: true, message: 'Employee deactivated' });
+  res.json({
+    success: true,
+    message: 'Employee deleted successfully',
+  });
 });
