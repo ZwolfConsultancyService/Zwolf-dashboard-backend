@@ -18,6 +18,8 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import guideRoutes from './routes/guideRoutes.js';
 import detailRoutes from './routes/detailRoutes.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
+import seoRoutes from "./routes/seoRoutes.js";
+import "./jobs/seoExpiryJob.js";
 
 const app = express();
 
@@ -71,6 +73,10 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/guides', guideRoutes);
 app.use('/api/details', detailRoutes);
+app.use(
+  "/api/seo",
+  seoRoutes
+);
 app.use(notFound);
 app.use(errorHandler);
 
