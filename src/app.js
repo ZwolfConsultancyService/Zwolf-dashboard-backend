@@ -2,7 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-
+import clientMessageRoutes from './routes/clientMessageRoutes.js';
+import clientAuthRoutes from './routes/clientAuthRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import employeeRoutes from './routes/employeeRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
@@ -20,7 +21,9 @@ import detailRoutes from './routes/detailRoutes.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import seoRoutes from "./routes/seoRoutes.js";
 import "./jobs/seoExpiryJob.js";
-
+import clientProjectRoutes from './routes/clientProjectRoutes.js';
+import pushRoutes from './routes/pushRoutes.js';
+import clientRequestRoutes from './routes/clientRequestRoutes.js';
 const app = express();
 
 app.use(helmet());
@@ -60,6 +63,14 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use(
+  '/api/client-auth',
+  clientAuthRoutes
+);
+app.use(
+  '/api/client-portal/projects',
+  clientProjectRoutes
+);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/projects', projectRoutes);
@@ -69,6 +80,10 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/daily-status', dailyStatusRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/client-messages', clientMessageRoutes);
+app.use('/api/push', pushRoutes);
+app.use('/api/client-requests', clientRequestRoutes);
+
 // app.use('/api/activity-logs', activityRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/guides', guideRoutes);

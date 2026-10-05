@@ -30,21 +30,70 @@ export const getProjects = asyncHandler(async (req, res) => {
 
   const [data, total] = await Promise.all([
     Project.find(filter)
-      .populate('client', 'clientName companyName')
-      .populate('salesEmployee', 'name email')
-      .populate('developers', 'name email')
+      .populate(
+        'client',
+        'clientName companyName email clientId'
+      )
+      .populate(
+        'salesEmployee',
+        'name email'
+      )
+      .populate(
+        'developers',
+        'name email'
+      )
       .sort('-createdAt')
       .skip(skip)
       .limit(limit),
+
     Project.countDocuments(filter),
   ]);
 
-  res.json({ success: true, ...paginatedResponse(data, total, page, limit) });
+  console.log(
+    '========== PROJECT CLIENT DATA =========='
+  );
+
+  console.log(
+    data.map((p) => ({
+      projectId: p._id,
+      projectName: p.projectName,
+
+      // Actual client ObjectId stored in Project
+      clientObjectId: p.client?._id,
+
+      // If your Client model has custom clientId
+      clientId: p.client?.clientId,
+
+      clientName: p.client?.clientName,
+
+      salesEmployee: p.salesEmployee?._id,
+    }))
+  );
+
+  console.log(
+    '=========================================='
+  );
+
+  res.json({
+    success: true,
+    ...paginatedResponse(
+      data,
+      total,
+      page,
+      limit
+    ),
+  });
 });
 
 export const createProject = asyncHandler(async (req, res) => {
   const payload = { ...req.body, createdBy: req.user._id };
 
+  if (payload.totalAmount !== undefined) {
+    const parsed = Number(payload.totalAmount);
+    payload.totalAmount = isNaN(parsed) || parsed < 0 ? 0 : parsed;
+  } else {
+    payload.totalAmount = 0;
+  }
   const client = await Client.findById(payload.client);
   if (!client) throw new ApiError(404, 'Client not found');
 
@@ -107,13 +156,22 @@ export const updateProject = asyncHandler(async (req, res) => {
   const managerAllowed = [
     'projectName', 'client', 'salesEmployee', 'developers', 'description',
     'technology', 'startDate', 'deadline', 'priority', 'status', 'progress',
-    'requirements',
+    'requirements','totalAmount',
   ];
 
   const allowed = isManager ? managerAllowed : isAssignedDev ? devAllowed : salesAllowed;
 
-  allowed.forEach((f) => { if (req.body[f] !== undefined) project[f] = req.body[f]; });
-
+allowed.forEach((f) => {
+  if (req.body[f] !== undefined) {
+    /* 🆕 Ensure totalAmount is a valid number */
+    if (f === 'totalAmount') {
+      const parsed = Number(req.body[f]);
+      project[f] = isNaN(parsed) || parsed < 0 ? 0 : parsed;
+    } else {
+      project[f] = req.body[f];
+    }
+  }
+});
   await project.save();
 
   await logActivity({

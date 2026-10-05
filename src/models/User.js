@@ -18,6 +18,12 @@ const userSchema = new mongoose.Schema(
       enum: ['manager', 'sales', 'developer'], // ← yaha naya role add karo enum: ['manager', 'sales', 'developer', 'finance'],  // ✅
       required: true,
     },
+    reportingManager: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+      index: true,
+    },
     profileImage: { type: String, default: '' },
     department: { type: String, default: '' },
     designation: { type: String, default: '' },

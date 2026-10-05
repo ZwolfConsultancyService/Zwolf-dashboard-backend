@@ -37,6 +37,11 @@ const projectSchema = new mongoose.Schema(
       default: 'Not Started',
     },
     progress: { type: Number, default: 0, min: 0, max: 100 },
+    totalAmount: {
+  type: Number,
+  default: 0,
+  min: 0,
+},
     requirements: { type: String, trim: true },
     notes: [
       {
