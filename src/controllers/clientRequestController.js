@@ -403,11 +403,28 @@ export const getClientRequests = async (req, res) => {
        FIND ONLY MANAGER'S OWN CLIENT CONVERSATIONS
     ===================================================== */
 
-    const conversationFilter = {
-      type: "client",
-      manager: req.user._id,
-      isActive: true,
-    };
+  /* =====================================================
+   ROLE-BASED CONVERSATION FILTER
+
+   Manager → apni client conversations
+   Sales   → apne assigned clients ki conversations
+===================================================== */
+
+let conversationFilter = {
+  type: 'client',
+  isActive: true,
+};
+
+if (req.user.role === 'manager') {
+  conversationFilter.manager = req.user._id;
+} else if (req.user.role === 'sales') {
+  conversationFilter.sales = req.user._id;
+} else {
+  return res.status(403).json({
+    success: false,
+    message: 'You are not allowed to view client requests',
+  });
+}
 
     const conversations = await Conversation.find(
       conversationFilter
