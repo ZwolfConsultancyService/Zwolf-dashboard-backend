@@ -3,7 +3,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { getPagination, paginatedResponse } from '../utils/pagination.js';
 import { logActivity } from '../services/activityService.js';
-
+import { notify } from '../services/notificationService.js';
 export const getEmployees = asyncHandler(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query);
   const { search, role, department, isActive } = req.query;
@@ -39,7 +39,19 @@ export const createEmployee = asyncHandler(async (req, res) => {
     user: req.user._id, action: 'CREATE', module: 'Employee',
     description: `Created employee ${user.name} (${user.role})`, referenceId: user._id,
   });
-
+/* 🔔 Welcome notification to new employee */
+try {
+  await notify({
+    from: req.user._id,
+    to: user._id,
+    type: 'welcome',
+    title: 'Welcome to Zwolf',
+    message: `Your account has been created. Welcome ${user.name}!`,
+    url: '/notifications',
+  });
+} catch (e) {
+  console.error('welcome notify err:', e);
+}
   res.status(201).json({ success: true, data: user });
 });
 

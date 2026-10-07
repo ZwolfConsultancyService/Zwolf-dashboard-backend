@@ -6,7 +6,7 @@ import {
   paginatedResponse,
 } from '../utils/pagination.js';
 import { logActivity } from '../services/activityService.js';
-
+import { notifyManager } from '../services/notificationService.js';
 /*
 |--------------------------------------------------------------------------
 | Generate Unique Client Portal ID
@@ -310,7 +310,16 @@ export const createClient = asyncHandler(
         `Created client ${client.clientName}`,
       referenceId: client._id,
     });
-
+/* 🔔 Notify manager if created by sales */
+if (req.user.role === 'sales') {
+  await notifyManager({
+    employeeId: req.user._id,
+    type: 'client',
+    title: 'New Client Added',
+    message: `${req.user.name} added client "${client.clientName}"`,
+    referenceId: client._id,
+  });
+}
     res.status(201).json({
       success: true,
       data: populated,

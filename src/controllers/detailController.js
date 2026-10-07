@@ -3,7 +3,8 @@ import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { getPagination, paginatedResponse } from '../utils/pagination.js';
 import { logActivity } from '../services/activityService.js';
-
+import { notifyMany } from '../services/notificationService.js';
+import User from '../models/User.js';
 // @desc    Get all details (filtered by role)
 // @route   GET /api/details
 export const getDetails = asyncHandler(async (req, res) => {
@@ -88,7 +89,45 @@ export const createDetail = asyncHandler(async (req, res) => {
     description: `Created detail "${title}" for ${targetType}`,
     referenceId: detail._id,
   });
+/* 🔔 Notify selected recipients */
+try {
+  let recipients = [];
 
+  if (targetType === 'everyone') {
+    const users = await User.find({
+      isActive: true,
+      role: { $ne: 'manager' },
+    }).select('_id');
+    recipients = users.map((u) => u._id);
+  } else if (targetType === 'sales') {
+    const users = await User.find({
+      role: 'sales',
+      isActive: true,
+    }).select('_id');
+    recipients = users.map((u) => u._id);
+  } else if (targetType === 'developers') {
+    const users = await User.find({
+      role: 'developer',
+      isActive: true,
+    }).select('_id');
+    recipients = users.map((u) => u._id);
+  } else if (targetType === 'specific') {
+    recipients = specificRecipients;
+  }
+
+  if (recipients.length > 0) {
+    await notifyMany({
+      from: req.user._id,
+      to: recipients,
+      type: 'detail',
+      title: 'New Detail Shared',
+      message: `"${title}" shared with you`,
+      referenceId: detail._id,
+    });
+  }
+} catch (e) {
+  console.error('detail notify err:', e);
+}
   res.status(201).json({ success: true, data: populated });
 });
 

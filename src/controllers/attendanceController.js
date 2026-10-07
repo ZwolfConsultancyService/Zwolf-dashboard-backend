@@ -123,3 +123,59 @@ export const updateAttendance = asyncHandler(async (req, res) => {
 
   res.json({ success: true, data: attendance });
 });
+
+/* =========================================================
+   🆕 DELETE SINGLE ATTENDANCE
+========================================================= */
+
+export const deleteAttendance = asyncHandler(async (req, res) => {
+  const record = await Attendance.findById(req.params.id);
+
+  if (!record) {
+    throw new ApiError(404, 'Attendance record not found');
+  }
+
+  await record.deleteOne();
+
+  await logActivity({
+    user: req.user._id,
+    action: 'DELETE',
+    module: 'Attendance',
+    description: `Deleted attendance record for ${record.date}`,
+    referenceId: record._id,
+  });
+
+  res.json({ success: true, message: 'Attendance deleted' });
+});
+
+/* =========================================================
+   🆕 DELETE ALL ATTENDANCE (with filters)
+========================================================= */
+
+export const deleteAllAttendance = asyncHandler(async (req, res) => {
+  const filter = {};
+
+  if (req.query.date) {
+    filter.date = startOfDay(req.query.date);
+  }
+
+  if (req.query.status) {
+    filter.status = req.query.status;
+  }
+
+  const result = await Attendance.deleteMany(filter);
+
+  await logActivity({
+    user: req.user._id,
+    action: 'DELETE',
+    module: 'Attendance',
+    description: `Deleted ${result.deletedCount} attendance records`,
+    metadata: { filters: filter, count: result.deletedCount },
+  });
+
+  res.json({
+    success: true,
+    message: `${result.deletedCount} records deleted`,
+    deletedCount: result.deletedCount,
+  });
+});

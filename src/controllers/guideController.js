@@ -3,7 +3,8 @@ import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { getPagination, paginatedResponse } from '../utils/pagination.js';
 import { logActivity } from '../services/activityService.js';
-
+import { notifyMany } from '../services/notificationService.js';
+import User from '../models/User.js';
 // @desc  Get guides (filtered by user role)
 // @route GET /api/guides
 export const getGuides = asyncHandler(async (req, res) => {
@@ -52,7 +53,43 @@ export const createGuide = asyncHandler(async (req, res) => {
     description: `Created guide "${title}" for ${targetRole}`,
     referenceId: guide._id,
   });
+/* 🔔 Notify target users */
+try {
+  let recipients = [];
 
+  if (targetRole === 'everyone') {
+    const users = await User.find({
+      isActive: true,
+      role: { $ne: 'manager' },
+    }).select('_id');
+    recipients = users.map((u) => u._id);
+  } else if (targetRole === 'sales') {
+    const users = await User.find({
+      role: 'sales',
+      isActive: true,
+    }).select('_id');
+    recipients = users.map((u) => u._id);
+  } else if (targetRole === 'developer') {
+    const users = await User.find({
+      role: 'developer',
+      isActive: true,
+    }).select('_id');
+    recipients = users.map((u) => u._id);
+  }
+
+  if (recipients.length > 0) {
+    await notifyMany({
+      from: req.user._id,
+      to: recipients,
+      type: 'guide',
+      title: 'New Guide Available',
+      message: `"${title}" guide added`,
+      referenceId: guide._id,
+    });
+  }
+} catch (e) {
+  console.error('guide notify err:', e);
+}
   res.status(201).json({ success: true, data: populated });
 });
 

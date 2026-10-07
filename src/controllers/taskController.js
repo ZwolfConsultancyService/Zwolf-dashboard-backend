@@ -4,7 +4,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { getPagination, paginatedResponse } from '../utils/pagination.js';
 import { logActivity } from '../services/activityService.js';
-
+import { notify, notifyMany } from '../services/notificationService.js';
 export const getTasks = asyncHandler(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query);
   const filter = {};
@@ -54,6 +54,16 @@ export const createTask = asyncHandler(async (req, res) => {
     description: `Created task ${task.title}`, referenceId: task._id,
   });
 
+  /* 🔔 Notify assigned developer */
+await notify({
+  from: req.user._id,
+  to: devId,
+  type: 'task',
+  title: 'New Task Assigned',
+  message: `"${task.title}" assigned to you`,
+  referenceId: task._id,
+});
+
   res.status(201).json({ success: true, data: task });
 });
 
@@ -97,6 +107,8 @@ export const updateTask = asyncHandler(async (req, res) => {
     description: `Updated task ${task.title}`, referenceId: task._id,
   });
 
+  
+
   res.json({ success: true, data: task });
 });
 
@@ -118,7 +130,17 @@ export const updateTaskStatus = asyncHandler(async (req, res) => {
     description: `Task "${task.title}" moved from ${oldStatus} to ${status}`,
     referenceId: task._id,
   });
-
+/* 🔔 Notify task creator if status changed by developer */
+if (req.user.role === 'developer' && task.createdBy) {
+  await notify({
+    from: req.user._id,
+    to: task.createdBy,
+    type: 'task',
+    title: 'Task Status Updated',
+    message: `"${task.title}" moved to ${status}`,
+    referenceId: task._id,
+  });
+}
   res.json({ success: true, data: task });
 });
 

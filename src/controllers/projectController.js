@@ -5,7 +5,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { getPagination, paginatedResponse } from '../utils/pagination.js';
 import { logActivity } from '../services/activityService.js';
-
+import { notifyMany } from '../services/notificationService.js';
 const buildProjectFilter = (req) => {
   const filter = {};
   const { search, status, developer, sales, priority } = req.query;
@@ -117,6 +117,18 @@ export const createProject = asyncHandler(async (req, res) => {
     description: `Created project ${project.projectName}`, referenceId: project._id,
   });
 
+  /* 🔔 Notify assigned developers */
+if (project.developers && project.developers.length > 0) {
+  await notifyMany({
+    from: req.user._id,
+    to: project.developers,
+    type: 'project',
+    title: 'New Project Assigned',
+    message: `"${project.projectName}" assigned to you`,
+    referenceId: project._id,
+  });
+}
+
   res.status(201).json({ success: true, data: populated });
 });
 
@@ -178,7 +190,17 @@ allowed.forEach((f) => {
     user: req.user._id, action: 'UPDATE', module: 'Project',
     description: `Updated project ${project.projectName}`, referenceId: project._id,
   });
-
+/* 🔔 Notify developers if updated by manager */
+if (req.user.role === 'manager' && project.developers?.length > 0) {
+  await notifyMany({
+    from: req.user._id,
+    to: project.developers,
+    type: 'project',
+    title: 'Project Updated',
+    message: `"${project.projectName}" details updated`,
+    referenceId: project._id,
+  });
+}
   res.json({ success: true, data: project });
 });
 

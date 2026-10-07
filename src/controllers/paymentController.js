@@ -5,7 +5,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { getPagination, paginatedResponse } from '../utils/pagination.js';
 import { logActivity } from '../services/activityService.js';
 import { recalculateClientTotals } from '../services/financialService.js';
-
+import { notifyManager } from '../services/notificationService.js';
 export const getPayments = asyncHandler(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query);
   const filter = {};
@@ -73,7 +73,16 @@ export const createPayment = asyncHandler(async (req, res) => {
     description: `Added payment ₹${amount} for client ${client.clientName}`,
     referenceId: payment._id,
   });
-
+/* 🔔 Notify manager if created by sales */
+if (req.user.role === 'sales') {
+  await notifyManager({
+    employeeId: req.user._id,
+    type: 'payment',
+    title: 'Payment Added',
+    message: `${req.user.name} added ₹${amount} for "${client.clientName}"`,
+    referenceId: payment._id,
+  });
+}
   res.status(201).json({ success: true, data: payment });
 });
 

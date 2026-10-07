@@ -3,7 +3,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { getPagination, paginatedResponse } from '../utils/pagination.js';
 import { logActivity } from '../services/activityService.js';
-
+import { notifyManager } from '../services/notificationService.js';
 const startOfDay = (d = new Date()) => {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
@@ -31,7 +31,18 @@ export const createOrUpdateDailyStatus = asyncHandler(async (req, res) => {
       completedWork, workInProgress, pendingWork, blockers, nextPlan,
     });
   }
-
+/* 🔔 Notify manager about daily status update */
+try {
+  await notifyManager({
+    employeeId: req.user._id,
+    type: 'daily-status',
+    title: 'Daily Status Updated',
+    message: `${req.user.name} submitted today's status`,
+    referenceId: status._id,
+  });
+} catch (e) {
+  console.error('daily-status notify err:', e);
+}
   res.json({ success: true, data: status });
 });
 
@@ -76,4 +87,39 @@ export const updateDailyStatus = asyncHandler(async (req, res) => {
   Object.assign(status, req.body);
   await status.save();
   res.json({ success: true, data: status });
+});
+
+/* =========================================================
+   🆕 DELETE DAILY STATUS
+========================================================= */
+
+export const deleteDailyStatus = asyncHandler(async (req, res) => {
+  const status = await DailyStatus.findById(req.params.id);
+
+  if (!status) {
+    throw new ApiError(404, 'Daily status not found');
+  }
+
+  /* ✅ Only own report can delete (or manager) */
+  if (
+    !status.employee.equals(req.user._id) &&
+    req.user.role !== 'manager'
+  ) {
+    throw new ApiError(403, 'You can only delete your own reports');
+  }
+
+  await status.deleteOne();
+
+  await logActivity({
+    user: req.user._id,
+    action: 'DELETE',
+    module: 'DailyStatus',
+    description: `Deleted daily status report`,
+    referenceId: status._id,
+  });
+
+  res.json({
+    success: true,
+    message: 'Daily status deleted successfully',
+  });
 });
