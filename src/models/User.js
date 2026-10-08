@@ -18,6 +18,22 @@ const userSchema = new mongoose.Schema(
       enum: ['manager', 'sales', 'developer'], // ← yaha naya role add karo enum: ['manager', 'sales', 'developer', 'finance'],  // ✅
       required: true,
     },
+    // ... existing fields ke saath ...
+
+    faceRegistered: {
+      type: Boolean,
+      default: false,
+    },
+
+    faceRegisteredAt: {
+      type: Date,
+      default: null,
+    },
+
+    faceImage: {
+      type: String,
+      default: '',
+    },
     reportingManager: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

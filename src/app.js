@@ -25,6 +25,8 @@ import clientProjectRoutes from './routes/clientProjectRoutes.js';
 import pushRoutes from './routes/pushRoutes.js';
 import clientRequestRoutes from './routes/clientRequestRoutes.js';
 import productRoutes from './routes/productRoutes.js';
+import holidayRoutes from './routes/holidayRoutes.js';
+
 
 const app = express();
 
@@ -86,6 +88,7 @@ app.use('/api/client-messages', clientMessageRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/client-requests', clientRequestRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/holidays', holidayRoutes);
 // app.use('/api/activity-logs', activityRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/guides', guideRoutes);

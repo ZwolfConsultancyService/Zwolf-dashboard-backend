@@ -3,6 +3,7 @@ import http from 'http';
 import app from './app.js';
 import { connectDB } from './config/db.js';
 import { initSocket } from '../socket.js';
+import { startAutoLogoutJob } from './jobs/autoLogoutJob.js';
 
 const PORT = process.env.PORT || 5000;
 
@@ -22,3 +23,5 @@ const start = async () => {
 };
 
 start();
+// Server start hone ke baad:
+startAutoLogoutJob();
