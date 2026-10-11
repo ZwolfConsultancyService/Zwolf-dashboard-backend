@@ -108,8 +108,24 @@ export const buildAttendanceData = ({
     faceImage,
   };
 
+  /* =====================================================
+     🆕 ABSENT CUTOFF (login time ke basis pe)
+  ===================================================== */
+
   if (loginTime) {
-    /* Late */
+    const login = new Date(loginTime);
+
+    const absentCutoff = parseTimeToDate(
+      settings.absentCutoffTime || '13:00',
+      login
+    );
+
+    const halfDayCutoff = parseTimeToDate(
+      settings.halfDayCutoffTime || '12:00',
+      login
+    );
+
+    /* Late minutes */
     const lateMinutes = calculateLateMinutes(
       loginTime,
       settings.officeStartTime,
@@ -117,10 +133,23 @@ export const buildAttendanceData = ({
     );
     data.lateMinutes = lateMinutes;
     data.isLate = lateMinutes > 0;
+
+    /* 🆕 Half Day — 12 PM ke baad */
+    if (login >= halfDayCutoff) {
+      data.isHalfDay = true;
+      data.status = 'Half Day';
+    }
+
+    /* 🆕 Absent — 1 PM ke baad (very late) */
+    if (login >= absentCutoff) {
+      data.isLate = true;
+      data.status = 'Absent';
+      data.isHalfDay = false;
+    }
   }
 
+  /* Working + Overtime */
   if (loginTime && logoutTime) {
-    /* Working */
     const workingMinutes = calculateWorkingMinutes(
       loginTime,
       logoutTime,
@@ -129,19 +158,20 @@ export const buildAttendanceData = ({
     );
     data.workingMinutes = workingMinutes;
 
-    /* Overtime */
     data.overtimeMinutes = calculateOvertimeMinutes(
       logoutTime,
       settings.officeEndTime
     );
 
-    /* Status */
-    if (workingMinutes < settings.halfDayMinutes) {
-      data.status = 'Half Day';
-      data.isHalfDay = true;
-    } else {
-      data.status = 'Present';
-      data.isHalfDay = false;
+    /* Agar absent nahi hai toh hi half-day / present decide karo */
+    if (data.status !== 'Absent') {
+      if (workingMinutes < settings.halfDayMinutes) {
+        data.status = 'Half Day';
+        data.isHalfDay = true;
+      } else {
+        data.status = 'Present';
+        data.isHalfDay = false;
+      }
     }
   }
 

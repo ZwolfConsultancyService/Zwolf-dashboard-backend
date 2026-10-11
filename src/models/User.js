@@ -29,6 +29,23 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    /* 🆕 SALARY FIELDS */
+monthlySalary: {
+  type: Number,
+  default: 0,
+  min: 0,
+},
+
+salaryType: {
+  type: String,
+  enum: ['Monthly', 'Hourly'],
+  default: 'Monthly',
+},
+
+salaryUpdatedAt: {
+  type: Date,
+  default: null,
+},
 
     faceImage: {
       type: String,

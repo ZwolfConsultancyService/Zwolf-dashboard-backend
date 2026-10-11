@@ -15,6 +15,8 @@ import {
   faceCheckIn,
   removeEmployeeFace,
   mlHealthCheck,
+   manualMarkAbsent, 
+    getMySalaryHistory,
 } from '../controllers/attendanceController.js';
 
 import { protect } from '../middleware/authMiddleware.js';
@@ -88,5 +90,12 @@ router.delete(
 );
 
 router.put('/:id', authorize('manager'), updateAttendance);
+router.get('/my-salary-history', getMySalaryHistory);
+/* 🆕 Manual Mark Absent */
+router.post(
+  '/mark-absent',
+  authorize('manager'),
+  manualMarkAbsent
+);
 
 export default router;

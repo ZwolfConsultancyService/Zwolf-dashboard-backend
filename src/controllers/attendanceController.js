@@ -655,3 +655,232 @@ export const mlHealthCheck = asyncHandler(async (req, res) => {
     error: result.error,
   });
 });
+/* =========================================================
+   MANUAL: MARK ABSENT (Manager)
+   
+   POST /api/attendance/mark-absent
+   Body: { date: 'YYYY-MM-DD' } (optional — default today)
+========================================================= */
+
+export const manualMarkAbsent = asyncHandler(async (req, res) => {
+  const { markAbsentForDate } = await import(
+    '../jobs/absentMarkJob.js'
+  );
+
+  const targetDate = req.body.date
+    ? new Date(req.body.date)
+    : new Date();
+
+  const result = await markAbsentForDate(targetDate);
+
+  if (result.skipped) {
+    return res.json({
+      success: true,
+      message: `Skipped: ${result.reason}`,
+      data: result,
+    });
+  }
+
+  await logActivity({
+    user: req.user._id,
+    action: 'UPDATE',
+    module: 'Attendance',
+    description: `Manually marked ${result.markedCount} employees as absent`,
+    metadata: {
+      date: result.date,
+      count: result.markedCount,
+    },
+  });
+
+  res.json({
+    success: true,
+    message: `Marked ${result.markedCount} employees as absent`,
+    data: result,
+  });
+});
+/* =========================================================
+   🆕 GET MY SALARY HISTORY (Employee)
+   
+   GET /api/attendance/my-salary-history?year=2026
+   
+   Employee apni month-wise salary dekh sake
+========================================================= */
+
+export const getMySalaryHistory = asyncHandler(async (req, res) => {
+  const year =
+    Number(req.query.year) || new Date().getFullYear();
+
+  const employee = await User.findById(req.user._id).select(
+    'name email role monthlySalary joiningDate'
+  );
+
+  if (!employee) {
+    throw new ApiError(404, 'Employee not found');
+  }
+
+  const monthlySalary = Number(employee.monthlySalary || 0);
+
+  /* Joining date */
+  const joiningDate = employee.joiningDate
+    ? new Date(employee.joiningDate)
+    : null;
+
+  /* Current date */
+  const now = new Date();
+
+  /* Settings */
+  const settings = await AttendanceSettings.getSettings();
+
+  const months = [];
+
+  /* YTD totals */
+  let totalEarned = 0;
+  let totalDeducted = 0;
+  let monthsWorked = 0;
+
+  /* Loop from January to December */
+  for (let m = 0; m < 12; m++) {
+    const monthStart = new Date(year, m, 1);
+    const monthEnd = new Date(year, m + 1, 0, 23, 59, 59);
+
+    /* Skip if month is in future */
+    if (monthStart > now) {
+      break;
+    }
+
+    /* Skip if employee hadn't joined yet */
+    if (joiningDate && monthStart < joiningDate) {
+      continue;
+    }
+
+    /* Get attendance for this month */
+    const attendance = await Attendance.find({
+      employee: employee._id,
+      date: { $gte: monthStart, $lte: monthEnd },
+    });
+
+    /* Get holidays */
+    const holidays = await Holiday.find({
+      isActive: true,
+      date: { $gte: monthStart, $lte: monthEnd },
+      $or: [
+        { applicableTo: 'All' },
+        { applicableTo: employee.role },
+        {
+          applicableTo: 'Specific',
+          specificEmployees: employee._id,
+        },
+      ],
+    });
+
+    /* Working days count */
+    const daysInMonth = new Date(year, m + 1, 0).getDate();
+    let workingDays = 0;
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, m, d);
+
+      /* Skip if before joining */
+      if (joiningDate && date < joiningDate) {
+        continue;
+      }
+
+      /* Weekend */
+      if (isWeekend(date, settings.weekendDays)) {
+        continue;
+      }
+
+      /* Holiday */
+      const isHol = holidays.find((h) => {
+        const hStart = startOfDay(h.date);
+        const hEnd = h.endDate ? endOfDay(h.endDate) : hStart;
+        return date >= hStart && date <= hEnd;
+      });
+
+      if (isHol) continue;
+
+      workingDays++;
+    }
+
+    /* Stats */
+    const stats = {
+      present: 0,
+      absent: 0,
+      halfDay: 0,
+      leavePaid: 0,
+      leaveUnpaid: 0,
+      holiday: 0,
+      weekend: 0,
+      late: 0,
+      totalWorkingMinutes: 0,
+    };
+
+    attendance.forEach((a) => {
+      if (a.status === 'Present') stats.present++;
+      else if (a.status === 'Absent') stats.absent++;
+      else if (a.status === 'Half Day') stats.halfDay++;
+      else if (a.status === 'Leave') {
+        if (a.notes?.toLowerCase().includes('unpaid')) {
+          stats.leaveUnpaid++;
+        } else {
+          stats.leavePaid++;
+        }
+      } else if (a.status === 'Holiday') stats.holiday++;
+      else if (a.status === 'Weekend') stats.weekend++;
+
+      if (a.isLate) stats.late++;
+      stats.totalWorkingMinutes += a.workingMinutes || 0;
+    });
+
+    /* Calculate salary */
+    const perDay = workingDays > 0 ? monthlySalary / workingDays : 0;
+
+    const effectiveDays =
+      stats.present +
+      stats.halfDay * 0.5 +
+      stats.leavePaid;
+
+    const earned = Math.round(perDay * effectiveDays);
+    const deducted = monthlySalary - earned;
+
+    totalEarned += earned;
+    totalDeducted += deducted;
+    monthsWorked++;
+
+    months.push({
+      month: m + 1,
+      monthName: new Date(year, m, 1).toLocaleString('en-IN', {
+        month: 'long',
+      }),
+      year,
+      monthlySalary,
+      workingDays,
+      perDaySalary: Math.round(perDay),
+      stats,
+      effectiveDays,
+      earned,
+      deducted,
+      finalSalary: earned,
+    });
+  }
+
+  res.json({
+    success: true,
+    data: {
+      year,
+      employee: {
+        name: employee.name,
+        role: employee.role,
+        monthlySalary,
+        joiningDate: employee.joiningDate,
+      },
+      ytd: {
+        totalEarned,
+        totalDeducted,
+        totalNetSalary: totalEarned,
+        monthsWorked,
+      },
+      months,
+    },
+  });
+});

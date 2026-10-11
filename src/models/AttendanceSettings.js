@@ -8,12 +8,12 @@ const attendanceSettingsSchema = new mongoose.Schema(
 
     officeStartTime: {
       type: String,
-      default: '10:00', // HH:MM (24hr)
+      default: '10:00',
     },
 
     officeEndTime: {
       type: String,
-      default: '18:00', // 6 PM
+      default: '18:00',
     },
 
     lunchStartTime: {
@@ -27,22 +27,38 @@ const attendanceSettingsSchema = new mongoose.Schema(
     },
 
     /* =====================================================
+       🆕 CUTOFF TIMES (NEW)
+    ===================================================== */
+
+    /* After this time → Half Day (12:00 PM) */
+    halfDayCutoffTime: {
+      type: String,
+      default: '12:00',
+    },
+
+    /* After this time → Absent (1:00 PM) */
+    absentCutoffTime: {
+      type: String,
+      default: '13:00',
+    },
+
+    /* =====================================================
        LATE / HALF DAY RULES
     ===================================================== */
 
     lateGraceMinutes: {
       type: Number,
-      default: 15, // 10:15 AM tak allowed
+      default: 15,
     },
 
     halfDayMinutes: {
       type: Number,
-      default: 240, // 4 hours
+      default: 240,
     },
 
     fullDayMinutes: {
       type: Number,
-      default: 480, // 8 hours
+      default: 480,
     },
 
     /* =====================================================
@@ -51,7 +67,7 @@ const attendanceSettingsSchema = new mongoose.Schema(
 
     weekendDays: {
       type: [Number],
-      default: [0, 6], // 0=Sunday, 6=Saturday
+      default: [0],
     },
 
     /* =====================================================
@@ -59,6 +75,15 @@ const attendanceSettingsSchema = new mongoose.Schema(
     ===================================================== */
 
     autoLogoutEnabled: {
+      type: Boolean,
+      default: true,
+    },
+
+    /* =====================================================
+       AUTO ABSENT (NEW)
+    ===================================================== */
+
+    autoAbsentEnabled: {
       type: Boolean,
       default: true,
     },
@@ -74,7 +99,7 @@ const attendanceSettingsSchema = new mongoose.Schema(
 
     faceMatchThreshold: {
       type: Number,
-      default: 0.6, // 0.6 = 60% confidence minimum
+      default: 0.6,
     },
 
     /* =====================================================
@@ -88,10 +113,6 @@ const attendanceSettingsSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
-/* =========================================================
-   SINGLETON — only 1 settings doc
-========================================================= */
 
 attendanceSettingsSchema.statics.getSettings = async function () {
   let settings = await this.findOne();
