@@ -19,6 +19,10 @@ const monthlyTrackingSchema = new mongoose.Schema(
             required: true,
         },
 
+        // ================================
+        // WORK METRICS
+        // ================================
+
         keywordsTarget: {
             type: Number,
             default: 0,
@@ -84,6 +88,44 @@ const monthlyTrackingSchema = new mongoose.Schema(
             default: 0,
             min: 0,
         },
+
+        // ================================
+        // NEW FIELDS
+        // ================================
+
+        caseStudiesTarget: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+
+        caseStudiesCompleted: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+
+        gmbTarget: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+
+        gmbCompleted: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+
+        rankingTarget: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+
+        // ================================
+        // PAYMENT
+        // ================================
 
         paymentAmount: {
             type: Number,
@@ -169,6 +211,19 @@ const dailyTrackingSchema = new mongoose.Schema(
             min: 0,
         },
 
+        // NEW
+        caseStudiesCompleted: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+
+        gmbCompleted: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+
         workStatus: {
             type: String,
             enum: ["pending", "in-progress", "completed"],
@@ -214,7 +269,6 @@ const seoSchema = new mongoose.Schema(
             required: true,
         },
 
-        // Snapshot values
         planName: {
             type: String,
             required: true,
@@ -250,30 +304,15 @@ const seoSchema = new mongoose.Schema(
             index: true,
         },
 
-
-        /*
-         * Monthly SEO Tracking
-         */
-
         monthlyTracking: {
             type: [monthlyTrackingSchema],
             default: [],
         },
 
-
-        /*
-         * Daily SEO Tracking
-         */
-
         dailyTracking: {
             type: [dailyTrackingSchema],
             default: [],
         },
-
-
-        /*
-         * General SEO Notes
-         */
 
         notes: {
             type: String,
@@ -281,11 +320,6 @@ const seoSchema = new mongoose.Schema(
             maxlength: 1000,
             default: "",
         },
-
-
-        /*
-         * Email Tracking
-         */
 
         renewalReminderSent: {
             type: Boolean,
@@ -306,11 +340,6 @@ const seoSchema = new mongoose.Schema(
             type: Date,
             default: null,
         },
-
-
-        /*
-         * Created By
-         */
 
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,

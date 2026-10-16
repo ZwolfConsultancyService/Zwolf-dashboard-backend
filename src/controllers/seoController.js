@@ -523,371 +523,733 @@ MONTHLY TRACKING
 */
 
 
-export const addMonthlyTracking = async (
-  req,
-  res
-) => {
-  try {
-    const { id } = req.params;
+// export const addMonthlyTracking = async (
+//   req,
+//   res
+// ) => {
+//   try {
+//     const { id } = req.params;
 
-    const {
-      month,
-      year,
-      startDate,
-      endDate,
-      paymentAmount,
-      paidAmount,
-      workStatus,
-      notes,
-    } = req.body;
+//     const {
+//       month,
+//       year,
+//       startDate,
+//       endDate,
+//       paymentAmount,
+//       paidAmount,
+//       workStatus,
+//       notes,
+//     } = req.body;
 
-    const seo = await SEO.findById(id);
+//     const seo = await SEO.findById(id);
 
-    if (!seo) {
-      return res.status(404).json({
-        success: false,
-        message: "SEO record not found",
-      });
-    }
+//     if (!seo) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "SEO record not found",
+//       });
+//     }
 
-    if (!month || !year) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Month and year are required",
-      });
-    }
+//     if (!month || !year) {
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "Month and year are required",
+//       });
+//     }
 
-    const alreadyExists =
-      seo.monthlyTracking.some(
-        (item) =>
-          item.month === month &&
-          Number(item.year) ===
-            Number(year)
-      );
+//     const alreadyExists =
+//       seo.monthlyTracking.some(
+//         (item) =>
+//           item.month === month &&
+//           Number(item.year) ===
+//             Number(year)
+//       );
 
-    if (alreadyExists) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "This month is already added",
-      });
-    }
+//     if (alreadyExists) {
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "This month is already added",
+//       });
+//     }
 
-    /*
-     * ================================
-     * PAYMENT CALCULATION
-     * ================================
-     */
+//     /*
+//      * ================================
+//      * PAYMENT CALCULATION
+//      * ================================
+//      */
 
-    const totalAmount =
-      Math.max(
-        0,
-        Number(paymentAmount || 0)
-      );
+//     const totalAmount =
+//       Math.max(
+//         0,
+//         Number(paymentAmount || 0)
+//       );
 
-    let paid =
-      Math.max(
-        0,
-        Number(paidAmount || 0)
-      );
+//     let paid =
+//       Math.max(
+//         0,
+//         Number(paidAmount || 0)
+//       );
 
-    /*
-     * Paid amount cannot be
-     * greater than total amount
-     */
+//     /*
+//      * Paid amount cannot be
+//      * greater than total amount
+//      */
 
-    if (paid > totalAmount) {
-      paid = totalAmount;
-    }
+//     if (paid > totalAmount) {
+//       paid = totalAmount;
+//     }
 
-    /*
-     * Payment status is automatically
-     * calculated from payment amounts
-     */
+//     /*
+//      * Payment status is automatically
+//      * calculated from payment amounts
+//      */
 
-    let finalPaymentStatus = "pending";
+//     let finalPaymentStatus = "pending";
 
-    if (
-      totalAmount > 0 &&
-      paid >= totalAmount
-    ) {
-      finalPaymentStatus = "paid";
-    } else if (paid > 0) {
-      finalPaymentStatus = "partial";
-    }
+//     if (
+//       totalAmount > 0 &&
+//       paid >= totalAmount
+//     ) {
+//       finalPaymentStatus = "paid";
+//     } else if (paid > 0) {
+//       finalPaymentStatus = "partial";
+//     }
 
-    /*
-     * ================================
-     * ADD MONTHLY TRACKING
-     * ================================
-     */
+//     /*
+//      * ================================
+//      * ADD MONTHLY TRACKING
+//      * ================================
+//      */
 
-    seo.monthlyTracking.push({
-      month,
-      year: Number(year),
+//     seo.monthlyTracking.push({
+//       month,
+//       year: Number(year),
 
-      startDate: startDate
-        ? new Date(startDate)
-        : new Date(),
+//       startDate: startDate
+//         ? new Date(startDate)
+//         : new Date(),
 
-      endDate: endDate
-        ? new Date(endDate)
-        : new Date(),
+//       endDate: endDate
+//         ? new Date(endDate)
+//         : new Date(),
 
-      paymentAmount: totalAmount,
+//       paymentAmount: totalAmount,
 
-      paidAmount: paid,
+//       paidAmount: paid,
 
-      paymentStatus:
-        finalPaymentStatus,
+//       paymentStatus:
+//         finalPaymentStatus,
 
-      workStatus:
-        workStatus || "pending",
+//       workStatus:
+//         workStatus || "pending",
 
-      notes: notes || "",
+//       notes: notes || "",
 
-      updatedBy: req.user?._id,
-    });
+//       updatedBy: req.user?._id,
+//     });
 
-    await seo.save();
+//     await seo.save();
 
-    const updatedSEO =
-      await SEO.findById(id)
-        .populate("client")
-        .populate("plan")
-        .populate(
-          "monthlyTracking.updatedBy",
-          "name email"
+//     const updatedSEO =
+//       await SEO.findById(id)
+//         .populate("client")
+//         .populate("plan")
+//         .populate(
+//           "monthlyTracking.updatedBy",
+//           "name email"
+//         );
+
+//     return res.status(201).json({
+//       success: true,
+//       message:
+//         "Monthly tracking added successfully",
+//       data: updatedSEO,
+//     });
+//   } catch (error) {
+//     console.error(
+//       "Add monthly tracking error:",
+//       error
+//     );
+
+//     return res.status(500).json({
+//       success: false,
+//       message:
+//         error.message ||
+//         "Failed to add monthly tracking",
+//     });
+//   }
+// };
+
+
+export const addMonthlyTracking = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const {
+            month,
+            year,
+
+            // WORK TARGETS
+            keywordsTarget,
+            keywordsCompleted,
+            backlinksTarget,
+            backlinksCompleted,
+            blogsTarget,
+            blogsCompleted,
+            onPageTarget,
+            onPageCompleted,
+            technicalTarget,
+            technicalCompleted,
+            rankingImproved,
+
+            // NEW WORK
+            caseStudiesTarget,
+            caseStudiesCompleted,
+            gmbTarget,
+            gmbCompleted,
+            rankingTarget,
+
+            // PAYMENT
+            paymentAmount,
+            paidAmount,
+            workStatus,
+            notes,
+        } = req.body;
+
+        const seo = await SEO.findById(id);
+
+        if (!seo) {
+            return res.status(404).json({
+                success: false,
+                message: "SEO record not found",
+            });
+        }
+
+        if (!month || !year) {
+            return res.status(400).json({
+                success: false,
+                message: "Month and year are required",
+            });
+        }
+
+        const alreadyExists =
+            seo.monthlyTracking.some(
+                (item) =>
+                    item.month === month &&
+                    Number(item.year) === Number(year)
+            );
+
+        if (alreadyExists) {
+            return res.status(400).json({
+                success: false,
+                message: "This month is already added",
+            });
+        }
+
+        /*
+         * ================================
+         * PAYMENT CALCULATION
+         * ================================
+         */
+
+        const totalAmount = Math.max(
+            0,
+            Number(paymentAmount || 0)
         );
 
-    return res.status(201).json({
-      success: true,
-      message:
-        "Monthly tracking added successfully",
-      data: updatedSEO,
-    });
-  } catch (error) {
-    console.error(
-      "Add monthly tracking error:",
-      error
-    );
+        let paid = Math.max(
+            0,
+            Number(paidAmount || 0)
+        );
 
-    return res.status(500).json({
-      success: false,
-      message:
-        error.message ||
-        "Failed to add monthly tracking",
-    });
-  }
+        if (paid > totalAmount) {
+            paid = totalAmount;
+        }
+
+        let finalPaymentStatus = "pending";
+
+        if (totalAmount > 0 && paid >= totalAmount) {
+            finalPaymentStatus = "paid";
+        } else if (paid > 0) {
+            finalPaymentStatus = "partial";
+        }
+
+        /*
+         * ================================
+         * ADD MONTHLY TRACKING
+         * ================================
+         */
+
+        seo.monthlyTracking.push({
+            month,
+            year: Number(year),
+
+            // WORK
+            keywordsTarget: Number(keywordsTarget || 0),
+            keywordsCompleted: Number(keywordsCompleted || 0),
+            backlinksTarget: Number(backlinksTarget || 0),
+            backlinksCompleted: Number(backlinksCompleted || 0),
+            blogsTarget: Number(blogsTarget || 0),
+            blogsCompleted: Number(blogsCompleted || 0),
+            onPageTarget: Number(onPageTarget || 0),
+            onPageCompleted: Number(onPageCompleted || 0),
+            technicalTarget: Number(technicalTarget || 0),
+            technicalCompleted: Number(technicalCompleted || 0),
+            rankingImproved: Number(rankingImproved || 0),
+
+            // NEW WORK
+            caseStudiesTarget: Number(caseStudiesTarget || 0),
+            caseStudiesCompleted: Number(caseStudiesCompleted || 0),
+            gmbTarget: Number(gmbTarget || 0),
+            gmbCompleted: Number(gmbCompleted || 0),
+            rankingTarget: Number(rankingTarget || 0),
+
+            // PAYMENT
+            paymentAmount: totalAmount,
+            paidAmount: paid,
+            paymentStatus: finalPaymentStatus,
+
+            workStatus: workStatus || "pending",
+            notes: notes || "",
+
+            updatedBy: req.user?._id,
+        });
+
+        await seo.save();
+
+        const updatedSEO = await SEO.findById(id)
+            .populate("client")
+            .populate("plan")
+            .populate("monthlyTracking.updatedBy", "name email");
+
+        return res.status(201).json({
+            success: true,
+            message: "Monthly tracking added successfully",
+            data: updatedSEO,
+        });
+    } catch (error) {
+        console.error("Add monthly tracking error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Failed to add monthly tracking",
+        });
+    }
 };
 
+// export const updateMonthlyTracking = async (
+//   req,
+//   res
+// ) => {
+//   try {
+//     const {
+//       id,
+//       trackingId,
+//     } = req.params;
 
-export const updateMonthlyTracking = async (
-  req,
-  res
-) => {
-  try {
-    const {
-      id,
-      trackingId,
-    } = req.params;
+//     const seo =
+//       await SEO.findById(id);
 
-    const seo =
-      await SEO.findById(id);
+//     if (!seo) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "SEO record not found",
+//       });
+//     }
 
-    if (!seo) {
-      return res.status(404).json({
-        success: false,
-        message: "SEO record not found",
-      });
-    }
+//     const tracking =
+//       seo.monthlyTracking.id(
+//         trackingId
+//       );
 
-    const tracking =
-      seo.monthlyTracking.id(
-        trackingId
-      );
+//     if (!tracking) {
+//       return res.status(404).json({
+//         success: false,
+//         message:
+//           "Monthly tracking not found",
+//       });
+//     }
 
-    if (!tracking) {
-      return res.status(404).json({
-        success: false,
-        message:
-          "Monthly tracking not found",
-      });
-    }
+//     const {
+//       month,
+//       year,
+//       startDate,
+//       endDate,
+//       paymentAmount,
+//       paidAmount,
+//       workStatus,
+//       notes,
+//     } = req.body;
 
-    const {
-      month,
-      year,
-      startDate,
-      endDate,
-      paymentAmount,
-      paidAmount,
-      workStatus,
-      notes,
-    } = req.body;
+//     /*
+//      * ================================
+//      * BASIC TRACKING UPDATE
+//      * ================================
+//      */
 
-    /*
-     * ================================
-     * BASIC TRACKING UPDATE
-     * ================================
-     */
+//     if (month !== undefined) {
+//       tracking.month = month;
+//     }
 
-    if (month !== undefined) {
-      tracking.month = month;
-    }
+//     if (year !== undefined) {
+//       tracking.year =
+//         Number(year);
+//     }
 
-    if (year !== undefined) {
-      tracking.year =
-        Number(year);
-    }
+//     if (startDate !== undefined) {
+//       tracking.startDate =
+//         new Date(startDate);
+//     }
 
-    if (startDate !== undefined) {
-      tracking.startDate =
-        new Date(startDate);
-    }
+//     if (endDate !== undefined) {
+//       tracking.endDate =
+//         new Date(endDate);
+//     }
 
-    if (endDate !== undefined) {
-      tracking.endDate =
-        new Date(endDate);
-    }
+//     /*
+//      * ================================
+//      * PAYMENT UPDATE
+//      * ================================
+//      */
 
-    /*
-     * ================================
-     * PAYMENT UPDATE
-     * ================================
-     */
+//     if (paymentAmount !== undefined) {
+//       tracking.paymentAmount =
+//         Math.max(
+//           0,
+//           Number(paymentAmount)
+//         );
+//     }
 
-    if (paymentAmount !== undefined) {
-      tracking.paymentAmount =
-        Math.max(
-          0,
-          Number(paymentAmount)
+//     if (paidAmount !== undefined) {
+//       tracking.paidAmount =
+//         Math.max(
+//           0,
+//           Number(paidAmount)
+//         );
+//     }
+
+//     /*
+//      * ================================
+//      * OTHER FIELDS
+//      * ================================
+//      */
+
+//     if (workStatus !== undefined) {
+//       tracking.workStatus =
+//         workStatus;
+//     }
+
+//     if (notes !== undefined) {
+//       tracking.notes =
+//         notes;
+//     }
+
+//     /*
+//      * ================================
+//      * AUTOMATIC PAYMENT CALCULATION
+//      * ================================
+//      */
+
+//     const totalAmount =
+//       Math.max(
+//         0,
+//         Number(
+//           tracking.paymentAmount || 0
+//         )
+//       );
+
+//     let paidAmountValue =
+//       Math.max(
+//         0,
+//         Number(
+//           tracking.paidAmount || 0
+//         )
+//       );
+
+//     /*
+//      * Paid amount cannot be greater
+//      * than total amount
+//      */
+
+//     if (
+//       paidAmountValue >
+//       totalAmount
+//     ) {
+//       paidAmountValue =
+//         totalAmount;
+//     }
+
+//     tracking.paidAmount =
+//       paidAmountValue;
+
+//     /*
+//      * Payment status automatically
+//      * calculated by backend
+//      */
+
+//     if (
+//       totalAmount > 0 &&
+//       paidAmountValue >= totalAmount
+//     ) {
+//       tracking.paymentStatus =
+//         "paid";
+//     } else if (
+//       paidAmountValue > 0
+//     ) {
+//       tracking.paymentStatus =
+//         "partial";
+//     } else {
+//       tracking.paymentStatus =
+//         "pending";
+//     }
+
+//     /*
+//      * ================================
+//      * UPDATED BY
+//      * ================================
+//      */
+
+//     tracking.updatedBy =
+//       req.user?._id;
+
+//     await seo.save();
+
+//     const updatedSEO =
+//       await SEO.findById(id)
+//         .populate("client")
+//         .populate("plan")
+//         .populate(
+//           "monthlyTracking.updatedBy",
+//           "name email"
+//         );
+
+//     return res.json({
+//       success: true,
+//       message:
+//         "Monthly tracking updated successfully",
+//       data: updatedSEO,
+//     });
+//   } catch (error) {
+//     console.error(
+//       "Update monthly tracking error:",
+//       error
+//     );
+
+//     return res.status(500).json({
+//       success: false,
+//       message:
+//         error.message ||
+//         "Failed to update monthly tracking",
+//     });
+//   }
+// };
+
+
+export const updateMonthlyTracking = async (req, res) => {
+    try {
+        const { id, trackingId } = req.params;
+
+        const seo = await SEO.findById(id);
+
+        if (!seo) {
+            return res.status(404).json({
+                success: false,
+                message: "SEO record not found",
+            });
+        }
+
+        const tracking = seo.monthlyTracking.id(trackingId);
+
+        if (!tracking) {
+            return res.status(404).json({
+                success: false,
+                message: "Monthly tracking not found",
+            });
+        }
+
+        const {
+            month,
+            year,
+
+            // WORK
+            keywordsTarget,
+            keywordsCompleted,
+            backlinksTarget,
+            backlinksCompleted,
+            blogsTarget,
+            blogsCompleted,
+            onPageTarget,
+            onPageCompleted,
+            technicalTarget,
+            technicalCompleted,
+            rankingImproved,
+
+            // NEW WORK
+            caseStudiesTarget,
+            caseStudiesCompleted,
+            gmbTarget,
+            gmbCompleted,
+            rankingTarget,
+
+            // PAYMENT
+            paymentAmount,
+            paidAmount,
+            workStatus,
+            notes,
+        } = req.body;
+
+        /*
+         * ================================
+         * BASIC UPDATE
+         * ================================
+         */
+
+        if (month !== undefined) tracking.month = month;
+        if (year !== undefined) tracking.year = Number(year);
+
+        /*
+         * ================================
+         * WORK UPDATE
+         * ================================
+         */
+
+        if (keywordsTarget !== undefined)
+            tracking.keywordsTarget = Math.max(0, Number(keywordsTarget));
+
+        if (keywordsCompleted !== undefined)
+            tracking.keywordsCompleted = Math.max(0, Number(keywordsCompleted));
+
+        if (backlinksTarget !== undefined)
+            tracking.backlinksTarget = Math.max(0, Number(backlinksTarget));
+
+        if (backlinksCompleted !== undefined)
+            tracking.backlinksCompleted = Math.max(0, Number(backlinksCompleted));
+
+        if (blogsTarget !== undefined)
+            tracking.blogsTarget = Math.max(0, Number(blogsTarget));
+
+        if (blogsCompleted !== undefined)
+            tracking.blogsCompleted = Math.max(0, Number(blogsCompleted));
+
+        if (onPageTarget !== undefined)
+            tracking.onPageTarget = Math.max(0, Number(onPageTarget));
+
+        if (onPageCompleted !== undefined)
+            tracking.onPageCompleted = Math.max(0, Number(onPageCompleted));
+
+        if (technicalTarget !== undefined)
+            tracking.technicalTarget = Math.max(0, Number(technicalTarget));
+
+        if (technicalCompleted !== undefined)
+            tracking.technicalCompleted = Math.max(0, Number(technicalCompleted));
+
+        if (rankingImproved !== undefined)
+            tracking.rankingImproved = Math.max(0, Number(rankingImproved));
+
+        /*
+         * ================================
+         * NEW WORK UPDATE
+         * ================================
+         */
+
+        if (caseStudiesTarget !== undefined)
+            tracking.caseStudiesTarget = Math.max(0, Number(caseStudiesTarget));
+
+        if (caseStudiesCompleted !== undefined)
+            tracking.caseStudiesCompleted = Math.max(0, Number(caseStudiesCompleted));
+
+        if (gmbTarget !== undefined)
+            tracking.gmbTarget = Math.max(0, Number(gmbTarget));
+
+        if (gmbCompleted !== undefined)
+            tracking.gmbCompleted = Math.max(0, Number(gmbCompleted));
+
+        if (rankingTarget !== undefined)
+            tracking.rankingTarget = Math.max(0, Number(rankingTarget));
+
+        /*
+         * ================================
+         * PAYMENT UPDATE
+         * ================================
+         */
+
+        if (paymentAmount !== undefined) {
+            tracking.paymentAmount = Math.max(0, Number(paymentAmount));
+        }
+
+        if (paidAmount !== undefined) {
+            tracking.paidAmount = Math.max(0, Number(paidAmount));
+        }
+
+        /*
+         * ================================
+         * OTHER FIELDS
+         * ================================
+         */
+
+        if (workStatus !== undefined) tracking.workStatus = workStatus;
+        if (notes !== undefined) tracking.notes = notes;
+
+        /*
+         * ================================
+         * AUTOMATIC PAYMENT CALCULATION
+         * ================================
+         */
+
+        const totalAmount = Math.max(
+            0,
+            Number(tracking.paymentAmount || 0)
         );
-    }
 
-    if (paidAmount !== undefined) {
-      tracking.paidAmount =
-        Math.max(
-          0,
-          Number(paidAmount)
-        );
-    }
-
-    /*
-     * ================================
-     * OTHER FIELDS
-     * ================================
-     */
-
-    if (workStatus !== undefined) {
-      tracking.workStatus =
-        workStatus;
-    }
-
-    if (notes !== undefined) {
-      tracking.notes =
-        notes;
-    }
-
-    /*
-     * ================================
-     * AUTOMATIC PAYMENT CALCULATION
-     * ================================
-     */
-
-    const totalAmount =
-      Math.max(
-        0,
-        Number(
-          tracking.paymentAmount || 0
-        )
-      );
-
-    let paidAmountValue =
-      Math.max(
-        0,
-        Number(
-          tracking.paidAmount || 0
-        )
-      );
-
-    /*
-     * Paid amount cannot be greater
-     * than total amount
-     */
-
-    if (
-      paidAmountValue >
-      totalAmount
-    ) {
-      paidAmountValue =
-        totalAmount;
-    }
-
-    tracking.paidAmount =
-      paidAmountValue;
-
-    /*
-     * Payment status automatically
-     * calculated by backend
-     */
-
-    if (
-      totalAmount > 0 &&
-      paidAmountValue >= totalAmount
-    ) {
-      tracking.paymentStatus =
-        "paid";
-    } else if (
-      paidAmountValue > 0
-    ) {
-      tracking.paymentStatus =
-        "partial";
-    } else {
-      tracking.paymentStatus =
-        "pending";
-    }
-
-    /*
-     * ================================
-     * UPDATED BY
-     * ================================
-     */
-
-    tracking.updatedBy =
-      req.user?._id;
-
-    await seo.save();
-
-    const updatedSEO =
-      await SEO.findById(id)
-        .populate("client")
-        .populate("plan")
-        .populate(
-          "monthlyTracking.updatedBy",
-          "name email"
+        let paidAmountValue = Math.max(
+            0,
+            Number(tracking.paidAmount || 0)
         );
 
-    return res.json({
-      success: true,
-      message:
-        "Monthly tracking updated successfully",
-      data: updatedSEO,
-    });
-  } catch (error) {
-    console.error(
-      "Update monthly tracking error:",
-      error
-    );
+        if (paidAmountValue > totalAmount) {
+            paidAmountValue = totalAmount;
+        }
 
-    return res.status(500).json({
-      success: false,
-      message:
-        error.message ||
-        "Failed to update monthly tracking",
-    });
-  }
+        tracking.paidAmount = paidAmountValue;
+
+        if (totalAmount > 0 && paidAmountValue >= totalAmount) {
+            tracking.paymentStatus = "paid";
+        } else if (paidAmountValue > 0) {
+            tracking.paymentStatus = "partial";
+        } else {
+            tracking.paymentStatus = "pending";
+        }
+
+        /*
+         * ================================
+         * UPDATED BY
+         * ================================
+         */
+
+        tracking.updatedBy = req.user?._id;
+
+        await seo.save();
+
+        const updatedSEO = await SEO.findById(id)
+            .populate("client")
+            .populate("plan")
+            .populate("monthlyTracking.updatedBy", "name email");
+
+        return res.json({
+            success: true,
+            message: "Monthly tracking updated successfully",
+            data: updatedSEO,
+        });
+    } catch (error) {
+        console.error("Update monthly tracking error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Failed to update monthly tracking",
+        });
+    }
 };
 
 
@@ -1010,173 +1372,276 @@ DAILY TRACKING
 */
 
 
-export const addDailyTracking =
-    async (req, res) => {
-        try {
-            const seo =
-                await SEO.findById(
-                    req.params.id
-                );
+// export const addDailyTracking =
+//     async (req, res) => {
+//         try {
+//             const seo =
+//                 await SEO.findById(
+//                     req.params.id
+//                 );
 
-            if (!seo) {
-                return res.status(404).json({
-                    success: false,
-                    message:
-                        "SEO record not found",
-                });
-            }
+//             if (!seo) {
+//                 return res.status(404).json({
+//                     success: false,
+//                     message:
+//                         "SEO record not found",
+//                 });
+//             }
 
-            const {
-                date,
-                keywordsCompleted,
-                backlinksCompleted,
-                blogsCompleted,
-                onPageCompleted,
-                technicalCompleted,
-                workStatus,
-                notes,
-            } = req.body;
+//             const {
+//                 date,
+//                 keywordsCompleted,
+//                 backlinksCompleted,
+//                 blogsCompleted,
+//                 onPageCompleted,
+//                 technicalCompleted,
+//                 workStatus,
+//                 notes,
+//             } = req.body;
 
-            if (!date) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Date is required",
-                });
-            }
+//             if (!date) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message:
+//                         "Date is required",
+//                 });
+//             }
 
-            const trackingDate =
-                new Date(date);
+//             const trackingDate =
+//                 new Date(date);
 
-            if (
-                Number.isNaN(
-                    trackingDate.getTime()
-                )
-            ) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Invalid tracking date",
-                });
-            }
+//             if (
+//                 Number.isNaN(
+//                     trackingDate.getTime()
+//                 )
+//             ) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message:
+//                         "Invalid tracking date",
+//                 });
+//             }
 
-            /*
-             * Prevent duplicate daily entry
-             */
+//             /*
+//              * Prevent duplicate daily entry
+//              */
 
-            const duplicate =
-                seo.dailyTracking.some(
-                    (item) => {
-                        const existingDate =
-                            new Date(item.date);
+//             const duplicate =
+//                 seo.dailyTracking.some(
+//                     (item) => {
+//                         const existingDate =
+//                             new Date(item.date);
 
-                        return (
-                            existingDate
-                                .toISOString()
-                                .split("T")[0] ===
-                            trackingDate
-                                .toISOString()
-                                .split("T")[0]
-                        );
-                    }
-                );
+//                         return (
+//                             existingDate
+//                                 .toISOString()
+//                                 .split("T")[0] ===
+//                             trackingDate
+//                                 .toISOString()
+//                                 .split("T")[0]
+//                         );
+//                     }
+//                 );
 
-            if (duplicate) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Daily tracking for this date already exists",
-                });
-            }
+//             if (duplicate) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message:
+//                         "Daily tracking for this date already exists",
+//                 });
+//             }
 
-            /*
-             * Make sure daily date
-             * belongs to SEO duration
-             */
+//             /*
+//              * Make sure daily date
+//              * belongs to SEO duration
+//              */
 
-            const startDate =
-                new Date(seo.startDate);
+//             const startDate =
+//                 new Date(seo.startDate);
 
-            const endDate =
-                new Date(seo.endDate);
+//             const endDate =
+//                 new Date(seo.endDate);
 
-            startDate.setHours(
-                0,
-                0,
-                0,
-                0
-            );
+//             startDate.setHours(
+//                 0,
+//                 0,
+//                 0,
+//                 0
+//             );
 
-            endDate.setHours(
-                23,
-                59,
-                59,
-                999
-            );
+//             endDate.setHours(
+//                 23,
+//                 59,
+//                 59,
+//                 999
+//             );
 
-            if (
-                trackingDate < startDate ||
-                trackingDate > endDate
-            ) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Tracking date must be within the SEO plan duration",
-                });
-            }
+//             if (
+//                 trackingDate < startDate ||
+//                 trackingDate > endDate
+//             ) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message:
+//                         "Tracking date must be within the SEO plan duration",
+//                 });
+//             }
 
-            seo.dailyTracking.push({
-                date: trackingDate,
+//             seo.dailyTracking.push({
+//                 date: trackingDate,
 
-                keywordsCompleted:
-                    keywordsCompleted || 0,
+//                 keywordsCompleted:
+//                     keywordsCompleted || 0,
 
-                backlinksCompleted:
-                    backlinksCompleted || 0,
+//                 backlinksCompleted:
+//                     backlinksCompleted || 0,
 
-                blogsCompleted:
-                    blogsCompleted || 0,
+//                 blogsCompleted:
+//                     blogsCompleted || 0,
 
-                onPageCompleted:
-                    onPageCompleted || 0,
+//                 onPageCompleted:
+//                     onPageCompleted || 0,
 
-                technicalCompleted:
-                    technicalCompleted || 0,
+//                 technicalCompleted:
+//                     technicalCompleted || 0,
 
-                workStatus:
-                    workStatus ||
-                    "pending",
+//                 workStatus:
+//                     workStatus ||
+//                     "pending",
 
-                notes:
-                    notes || "",
+//                 notes:
+//                     notes || "",
 
-                updatedBy:
-                    req.user._id,
-            });
+//                 updatedBy:
+//                     req.user._id,
+//             });
 
-            await seo.save();
+//             await seo.save();
 
-            return res.status(201).json({
-                success: true,
-                message:
-                    "Daily SEO tracking added successfully",
-                data: seo,
-            });
-        } catch (error) {
-            console.error(
-                "Add daily tracking error:",
-                error
-            );
+//             return res.status(201).json({
+//                 success: true,
+//                 message:
+//                     "Daily SEO tracking added successfully",
+//                 data: seo,
+//             });
+//         } catch (error) {
+//             console.error(
+//                 "Add daily tracking error:",
+//                 error
+//             );
 
-            return res.status(500).json({
+//             return res.status(500).json({
+//                 success: false,
+//                 message:
+//                     "Failed to add daily tracking",
+//                 error: error.message,
+//             });
+//         }
+//     };
+
+export const addDailyTracking = async (req, res) => {
+    try {
+        const seo = await SEO.findById(req.params.id);
+
+        if (!seo) {
+            return res.status(404).json({
                 success: false,
-                message:
-                    "Failed to add daily tracking",
-                error: error.message,
+                message: "SEO record not found",
             });
         }
-    };
 
+        const {
+            date,
+            keywordsCompleted,
+            backlinksCompleted,
+            blogsCompleted,
+            onPageCompleted,
+            technicalCompleted,
+            caseStudiesCompleted,
+            gmbCompleted,
+            workStatus,
+            notes,
+        } = req.body;
+
+        if (!date) {
+            return res.status(400).json({
+                success: false,
+                message: "Date is required",
+            });
+        }
+
+        const trackingDate = new Date(date);
+
+        if (Number.isNaN(trackingDate.getTime())) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid tracking date",
+            });
+        }
+
+        const duplicate = seo.dailyTracking.some((item) => {
+            const existingDate = new Date(item.date);
+            return (
+                existingDate.toISOString().split("T")[0] ===
+                trackingDate.toISOString().split("T")[0]
+            );
+        });
+
+        if (duplicate) {
+            return res.status(400).json({
+                success: false,
+                message: "Daily tracking for this date already exists",
+            });
+        }
+
+        const startDate = new Date(seo.startDate);
+        const endDate = new Date(seo.endDate);
+
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+
+        if (trackingDate < startDate || trackingDate > endDate) {
+            return res.status(400).json({
+                success: false,
+                message: "Tracking date must be within the SEO plan duration",
+            });
+        }
+
+        seo.dailyTracking.push({
+            date: trackingDate,
+
+            keywordsCompleted: Number(keywordsCompleted || 0),
+            backlinksCompleted: Number(backlinksCompleted || 0),
+            blogsCompleted: Number(blogsCompleted || 0),
+            onPageCompleted: Number(onPageCompleted || 0),
+            technicalCompleted: Number(technicalCompleted || 0),
+
+            // NEW
+            caseStudiesCompleted: Number(caseStudiesCompleted || 0),
+            gmbCompleted: Number(gmbCompleted || 0),
+
+            workStatus: workStatus || "pending",
+            notes: notes || "",
+            updatedBy: req.user._id,
+        });
+
+        await seo.save();
+
+        return res.status(201).json({
+            success: true,
+            message: "Daily SEO tracking added successfully",
+            data: seo,
+        });
+    } catch (error) {
+        console.error("Add daily tracking error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to add daily tracking",
+            error: error.message,
+        });
+    }
+};
 
 export const getDailyTracking =
     async (req, res) => {
