@@ -31,6 +31,8 @@ import leaveRoutes from './routes/leaveRoutes.js';
 import resignationRoutes from './routes/resignationRoutes.js';
 import proposalRoutes from './routes/proposalRoutes.js';
 import clientProposalRoutes from './routes/clientProposalRoutes.js';
+import meetingRoutes from './routes/meetingRoutes.js';
+
 const app = express();
 
 app.use(helmet());
@@ -94,6 +96,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/holidays', holidayRoutes);
 app.use('/api/kiosk', kioskRoutes);
 // app.use('/api/activity-logs', activityRoutes);
+app.use('/api/meetings', meetingRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/guides', guideRoutes);
 app.use('/api/details', detailRoutes);

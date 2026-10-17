@@ -5,6 +5,7 @@ import { connectDB } from './config/db.js';
 import { initSocket } from '../socket.js';
 import { startAutoLogoutJob } from './jobs/autoLogoutJob.js';
 import { startAbsentMarkJob } from './jobs/absentMarkJob.js';
+import { startMeetingReminderJob } from './jobs/meetingReminderJob.js';
 const PORT = process.env.PORT || 5000;
 
 const start = async () => {
@@ -20,6 +21,7 @@ const start = async () => {
     /* ✅ Auto-logout cron start karo */
     startAutoLogoutJob();
     startAbsentMarkJob();
+    startMeetingReminderJob();
 
     /* ✅ server.listen use karo, app.listen NAHI */
     server.listen(PORT, '0.0.0.0', () => {
