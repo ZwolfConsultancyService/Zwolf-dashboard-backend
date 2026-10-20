@@ -55,7 +55,7 @@ router.patch(
   authorize('manager', 'sales'),
   updateMeetingStatus
 );
-// ✅ Naya Code:
+// ✅ Naya Code:             
 router.delete(
   '/:id',
   authorize('manager', 'sales'), // 'sales' add kiya
