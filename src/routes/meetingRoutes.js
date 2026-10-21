@@ -53,7 +53,12 @@ router.put(
 router.patch(
   '/:id/status',
   authorize('manager', 'sales'),
-  updateMeetingStatus
+  updateMeetingStatus 
+
+
+
+
+  /// updates main kiya problme hai. iss main chek it kerna ahi 
 );
 // ✅ Naya Code:             
 router.delete(
