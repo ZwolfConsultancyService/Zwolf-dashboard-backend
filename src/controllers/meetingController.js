@@ -76,7 +76,7 @@ export const checkConflict = asyncHandler(async (req, res) => {
   const { myConflicts, teamConflicts } = await checkMeetingConflict({
     salesPersonId: req.user._id,
     clientId: null,
-    date: date, // String bhej rahe hain, startOfDay handle kar lega
+    date: date,
     startMinutes: startMin,
     endMinutes: endMin,
     excludeId: excludeId || null,
@@ -187,7 +187,7 @@ export const createMeeting = asyncHandler(async (req, res) => {
     clientName: clientDoc.clientName,
     clientPhone: clientDoc.phone,
     meetingType: meetingType || 'Doctor',
-    date: startOfDay(date), // ✅ FIXED: Timezone safe
+    date: startOfDay(date),
     startTime,
     endTime: minutesToTime(endMin),
     startMinutes: startMin,
@@ -203,7 +203,7 @@ export const createMeeting = asyncHandler(async (req, res) => {
   });
 
   const populated = await Meeting.findById(meeting._id)
-    .populate('client', 'clientName companyName email phone')
+    .populate('client', 'clientName companyName email phone city state address') // 🆕 ADDED
     .populate('salesPerson', 'name role email');
 
   if (req.user.role === 'sales' && req.user.reportingManager) {
@@ -255,7 +255,7 @@ export const getMyMeetings = asyncHandler(async (req, res) => {
 
   const [data, total] = await Promise.all([
     Meeting.find(filter)
-      .populate('client', 'clientName companyName email phone')
+      .populate('client', 'clientName companyName email phone city state address') // 🆕 ADDED
       .populate('salesPerson', 'name role')
       .sort({ date: -1, startMinutes: -1 })
       .skip(skip)
@@ -267,7 +267,7 @@ export const getMyMeetings = asyncHandler(async (req, res) => {
 });
 
 /* =========================================================
-   GET ALL MEETINGS
+   GET ALL MEETINGS  ⬅️ YAHAN UPDATE HUA
 ========================================================= */
 
 export const getAllMeetings = asyncHandler(async (req, res) => {
@@ -286,9 +286,9 @@ export const getAllMeetings = asyncHandler(async (req, res) => {
 
   const [data, total] = await Promise.all([
     Meeting.find(filter)
-      .populate('client', 'clientName companyName email phone')
+      .populate('client', 'clientName companyName email phone city state address') // 🆕 ADDED
       .populate('salesPerson', 'name role email department')
-      .populate('participants', 'name role') // 🆕 ADD
+      .populate('participants', 'name role')
       .sort({ date: -1, startMinutes: -1 })
       .skip(skip)
       .limit(limit),
@@ -317,7 +317,7 @@ export const getAllMeetings = asyncHandler(async (req, res) => {
 });
 
 /* =========================================================
-   GET CALENDAR DATA (✅ FIXED: Local Date Key)
+   GET CALENDAR DATA  ⬅️ YAHAN UPDATE HUA
 ========================================================= */
 
 export const getCalendarData = asyncHandler(async (req, res) => {
@@ -335,21 +335,20 @@ export const getCalendarData = asyncHandler(async (req, res) => {
   if (req.query.salesPerson) filter.salesPerson = req.query.salesPerson;
 
   const meetings = await Meeting.find(filter)
-    .populate('client', 'clientName companyName')
+    .populate('client', 'clientName companyName city state address') // 🆕 ADDED city, state, address
     .populate('salesPerson', 'name role')
-    .populate('participants', 'name role') // 🆕 ADD
+    .populate('participants', 'name role')
     .sort({ date: 1, startMinutes: 1 })
     .lean();
 
   const byDate = {};
   meetings.forEach((m) => {
-    // ✅ FIXED: UTC ki jagah local date (IST) nikal rahe hain
     const d = new Date(m.date);
     const y = d.getFullYear();
     const mo = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
-    const key = `${y}-${mo}-${day}`; 
-    
+    const key = `${y}-${mo}-${day}`;
+
     if (!byDate[key]) byDate[key] = [];
     byDate[key].push(m);
   });
@@ -369,7 +368,7 @@ export const getTodayMeetings = asyncHandler(async (req, res) => {
   if (req.user.role === 'sales') filter.salesPerson = req.user._id;
 
   const meetings = await Meeting.find(filter)
-    .populate('client', 'clientName companyName phone')
+    .populate('client', 'clientName companyName phone city state address') // 🆕 ADDED
     .populate('salesPerson', 'name role')
     .sort({ startMinutes: 1 })
     .lean();
@@ -383,7 +382,7 @@ export const getTodayMeetings = asyncHandler(async (req, res) => {
 
 export const getMeeting = asyncHandler(async (req, res) => {
   const meeting = await Meeting.findById(req.params.id)
-    .populate('client', 'clientName companyName email phone address')
+    .populate('client', 'clientName companyName email phone address city state') // 🆕 ADDED city, state
     .populate('salesPerson', 'name role email department phone');
 
   if (!meeting) throw new ApiError(404, 'Meeting not found');
@@ -406,7 +405,7 @@ export const updateMeeting = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Only scheduled meetings can be edited');
   }
 
-  const { date, startTime, duration, meetingType, purpose, notes, location ,   participants } = req.body;
+  const { date, startTime, duration, meetingType, purpose, notes, location, participants } = req.body;
 
   if (date || startTime || duration) {
     const newDate = date ? date : meeting.date;
@@ -446,7 +445,7 @@ export const updateMeeting = asyncHandler(async (req, res) => {
       });
     }
 
-    meeting.date = startOfDay(newDate); // ✅ FIXED
+    meeting.date = startOfDay(newDate);
     meeting.startTime = newStartTime;
     meeting.startMinutes = startMin;
     meeting.endMinutes = endMin;
@@ -458,15 +457,14 @@ export const updateMeeting = asyncHandler(async (req, res) => {
   if (purpose !== undefined) meeting.purpose = purpose?.trim() || '';
   if (notes !== undefined) meeting.notes = notes?.trim() || '';
   if (location !== undefined) meeting.location = location?.trim() || '';
-    if (participants !== undefined) {
-    meeting.participants = participants; // 🆕 ADD
+  if (participants !== undefined) {
+    meeting.participants = participants;
   }
-
 
   await meeting.save();
 
   const populated = await Meeting.findById(meeting._id)
-    .populate('client', 'clientName companyName email phone')
+    .populate('client', 'clientName companyName email phone city state address') // 🆕 ADDED
     .populate('salesPerson', 'name role email');
 
   await logActivity({
