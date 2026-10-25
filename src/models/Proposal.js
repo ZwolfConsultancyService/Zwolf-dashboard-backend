@@ -27,6 +27,12 @@ const proposalSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // 🆕 PDF Document URL
+    documentPdf: {
+      type: String,
+      required: true,
+    },
+
     description: {
       type: String,
       trim: true,
@@ -56,9 +62,10 @@ const proposalSchema = new mongoose.Schema(
       default: null,
     },
 
+    // Total amount ko optional kar diya (default 0)
     totalAmount: {
       type: Number,
-      required: true,
+      default: 0,
       min: 0,
     },
 
@@ -83,7 +90,7 @@ const proposalSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ['Draft', 'Approved', 'Archived'],
-      default: 'Draft',
+      default: 'Approved', // Form submit hote hi direct Approved ho jayega
       index: true,
     },
 
@@ -108,13 +115,9 @@ proposalSchema.index({ status: 1, createdAt: -1 });
 /* AUTO PROPOSAL NUMBER */
 proposalSchema.pre('save', async function (next) {
   if (this.isNew && !this.proposalNumber) {
-    const count = await mongoose
-      .model('Proposal')
-      .countDocuments();
+    const count = await mongoose.model('Proposal').countDocuments();
     const year = new Date().getFullYear();
-    this.proposalNumber = `PROP-${year}-${String(
-      count + 1
-    ).padStart(4, '0')}`;
+    this.proposalNumber = `PROP-${year}-${String(count + 1).padStart(4, '0')}`;
   }
   next();
 });

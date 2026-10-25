@@ -39,6 +39,8 @@ import assignmentRoutes from './routes/assignmentRoutes.js';
 
 import leadRoutes from './routes/leadRoutes.js';
 
+import documentRoutes from './routes/documentRoutes.js';
+
 const app = express();
 
 app.use(helmet());
@@ -114,6 +116,7 @@ app.use('/api/resignations', resignationRoutes);
 app.use('/api/proposals', proposalRoutes);
 app.use('/api/client-portal/proposals', clientProposalRoutes);
 app.use('/api/leads', leadRoutes);
+app.use('/api/documents', documentRoutes);
 app.use(
   "/api/seo",
   seoRoutes
