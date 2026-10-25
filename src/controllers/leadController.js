@@ -109,12 +109,32 @@ export const getMyLeadCount = asyncHandler(async (req, res) => {
 
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [today, week, month, total] = await Promise.all([
-    Lead.countDocuments({ salesPerson: req.user._id, leadDate: { $gte: todayStart } }),
-    Lead.countDocuments({ salesPerson: req.user._id, leadDate: { $gte: weekStart } }),
-    Lead.countDocuments({ salesPerson: req.user._id, leadDate: { $gte: monthStart } }),
-    Lead.countDocuments({ salesPerson: req.user._id }),
-  ]);
+  // 🆕 Sirf wahi leads count karo jinki category/location active ho
+  const filter = { salesPerson: req.user._id };
+
+  // Hum query mein hi deleted categories/locations ko filter kar sakte hain
+  // Par sabse aasan tarika yeh hai ki hum Lead ko populate karein aur phir check karein
+  
+  const allLeads = await Lead.find(filter)
+    .populate('category', 'isActive')
+    .populate('location', 'isActive')
+    .lean();
+
+  // 🆕 Filter out those leads whose category or location is deleted/inactive
+  const validLeads = allLeads.filter((lead) => {
+    return (
+      lead.category && 
+      lead.category.isActive !== false && 
+      lead.location && 
+      lead.location.isActive !== false
+    );
+  });
+
+  // Ab in valid leads ko date ke hisaab se count karo
+  const today = validLeads.filter((l) => new Date(l.leadDate) >= todayStart).length;
+  const week = validLeads.filter((l) => new Date(l.leadDate) >= weekStart).length;
+  const month = validLeads.filter((l) => new Date(l.leadDate) >= monthStart).length;
+  const total = validLeads.length;
 
   res.json({ success: true, data: { today, week, month, total } });
 });
