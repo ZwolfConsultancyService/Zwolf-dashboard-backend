@@ -6,6 +6,8 @@ import { initSocket } from '../socket.js';
 import { startAutoLogoutJob } from './jobs/autoLogoutJob.js';
 import { startAbsentMarkJob } from './jobs/absentMarkJob.js';
 import { startMeetingReminderJob } from './jobs/meetingReminderJob.js';
+import { startReminderCron } from './jobs/pendingReminders.js';
+
 const PORT = process.env.PORT || 5000;
 
 const start = async () => {
@@ -22,6 +24,7 @@ const start = async () => {
     startAutoLogoutJob();
     startAbsentMarkJob();
     startMeetingReminderJob();
+      startReminderCron();
 
     /* ✅ server.listen use karo, app.listen NAHI */
     server.listen(PORT, '0.0.0.0', () => {

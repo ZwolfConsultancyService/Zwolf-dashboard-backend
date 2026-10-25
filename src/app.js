@@ -33,6 +33,12 @@ import proposalRoutes from './routes/proposalRoutes.js';
 import clientProposalRoutes from './routes/clientProposalRoutes.js';
 import meetingRoutes from './routes/meetingRoutes.js';
 
+import categoryRoutes from './routes/categoryRoutes.js';
+import categoryLocationRoutes from './routes/categoryLocationRoutes.js';
+import assignmentRoutes from './routes/assignmentRoutes.js';
+
+import leadRoutes from './routes/leadRoutes.js';
+
 const app = express();
 
 app.use(helmet());
@@ -95,6 +101,9 @@ app.use('/api/client-requests', clientRequestRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/holidays', holidayRoutes);
 app.use('/api/kiosk', kioskRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/category-locations', categoryLocationRoutes);
+app.use('/api/assignments', assignmentRoutes);
 // app.use('/api/activity-logs', activityRoutes);
 app.use('/api/meetings', meetingRoutes);
 app.use('/api/dashboard', dashboardRoutes);
@@ -104,7 +113,7 @@ app.use('/api/leaves', leaveRoutes);
 app.use('/api/resignations', resignationRoutes);
 app.use('/api/proposals', proposalRoutes);
 app.use('/api/client-portal/proposals', clientProposalRoutes);
-
+app.use('/api/leads', leadRoutes);
 app.use(
   "/api/seo",
   seoRoutes
